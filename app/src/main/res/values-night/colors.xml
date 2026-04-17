@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="gradient_top">#0B3D2E</color>
+    <color name="gradient_bottom">#0F1E3D</color>
+
+    <color name="glass_fill">#332A3D4A</color>
+    <color name="glass_stroke">#26FFFFFF</color>
+    <color name="chip_fill">#1AFFFFFF</color>
+    <color name="chip_stroke">#26FFFFFF</color>
+
+    <color name="status_on">#34D399</color>
+    <color name="status_on_glow">#3334D399</color>
+    <color name="status_off">#F87171</color>
+    <color name="accent">#7EE8C4</color>
+
+    <color name="text_primary">#F5F7FB</color>
+    <color name="text_secondary">#A8B2C4</color>
+
+    <!-- Shield glyph — near-white in dark mode so it pops against the dark glass card. -->
+    <color name="shield_glyph">#F5F7FB</color>
+
+    <color name="background">#0F1E3D</color>
+    <color name="green_active">#34D399</color>
+    <color name="red_inactive">#F87171</color>
+</resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AdBlocker DNS</string>
+    <string name="status_on">Ad blocking is ON</string>
+    <string name="status_off">Ad blocking is OFF</string>
+</resources>
