@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Gradient background -->
+    <color name="gradient_top">#A8D5BA</color>
+    <color name="gradient_bottom">#C8D4F0</color>
+
+    <!-- Glass -->
+    <color name="glass_fill">#66FFFFFF</color>
+    <color name="glass_stroke">#2E0B3D2E</color>
+    <color name="chip_fill">#33FFFFFF</color>
+    <color name="chip_stroke">#2E0B3D2E</color>
+
+    <!-- Status -->
+    <color name="status_on">#0F9D65</color>
+    <color name="status_on_glow">#330F9D65</color>
+    <color name="status_off">#DC2626</color>
+    <color name="accent">#0F9D65</color>
+
+    <!-- Text -->
+    <color name="text_primary">#0F1E3D</color>
+    <color name="text_secondary">#4A5872</color>
+
+    <!-- Shield glyph (centre of the status ring when OFF). Theme-aware via values-night.
+         Light mode: dark navy so it reads against the translucent-white glass card. -->
+    <color name="shield_glyph">#0F1E3D</color>
+
+    <!-- Legacy tokens kept to avoid breaking anywhere still referencing them -->
+    <color name="background">#C8D4F0</color>
+    <color name="green_active">#0F9D65</color>
+    <color name="red_inactive">#DC2626</color>
+</resources>
