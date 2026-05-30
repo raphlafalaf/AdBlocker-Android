@@ -263,13 +263,11 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
 
-                <ListView
+                <LinearLayout
                     android:id="@+id/listWhitelist"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:nestedScrollingEnabled="false"
-                    android:divider="@android:color/transparent"
-                    android:dividerHeight="0dp" />
+                    android:orientation="vertical" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -325,13 +323,11 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
 
-                <ListView
+                <LinearLayout
                     android:id="@+id/listBlacklist"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:nestedScrollingEnabled="false"
-                    android:divider="@android:color/transparent"
-                    android:dividerHeight="0dp" />
+                    android:orientation="vertical" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

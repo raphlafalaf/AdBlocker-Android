@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -24,7 +25,9 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.dev.adblocker.databinding.ActivityMainBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -141,19 +144,54 @@ class MainActivity : AppCompatActivity() {
     // ── VPN control ───────────────────────────────────────────────────────
 
     private fun startVpn() {
-        val status = HostsManager.getStatus(this)
-        val anyCached = status.perSource.values.any { it.cacheExists }
-        if (!anyCached) {
+        val enabled = prefs.getEnabledSourceKeys().toList()
+
+        // Nothing selected to update — the VPN can still run off the custom
+        // blacklist, so offer to start anyway rather than silently blocking.
+        if (enabled.isEmpty()) {
             AlertDialog.Builder(this)
-                .setTitle("No blocklists downloaded")
-                .setMessage("You haven't downloaded any blocklists yet.\n\n" +
-                    "The VPN will start but won't block anything until you tap \"Update selected sources\".\n\n" +
+                .setTitle("No sources selected")
+                .setMessage("You haven't selected any filter sources.\n\n" +
+                    "The VPN will start but will only block domains on your " +
+                    "blacklist until you select and update some sources.\n\n" +
                     "Continue anyway?")
                 .setPositiveButton("Start anyway") { _, _ -> requestVpnPermissionAndStart() }
                 .setNegativeButton("Cancel", null)
                 .show()
-        } else {
-            requestVpnPermissionAndStart()
+            return
+        }
+
+        // Always refresh the selected sources before starting so the VPN comes
+        // up with the freshest lists.
+        binding.btnToggle.isEnabled = false
+        binding.btnUpdateHosts.isEnabled = false
+        binding.tvHostsUpdated.text = "Updating selected sources…"
+        lifecycleScope.launch {
+            val result = HostsManager.downloadAndReload(applicationContext, enabled)
+            binding.btnToggle.isEnabled = true
+            binding.btnUpdateHosts.isEnabled = true
+            result.fold(
+                onSuccess = { merged ->
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Lists updated: %,d domains".format(merged),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    refreshHostsStatus()
+                    requestVpnPermissionAndStart()
+                },
+                onFailure = { err ->
+                    // Couldn't refresh — start anyway using whatever was last
+                    // cached, but tell the user the update didn't go through.
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Update failed (${err.message}). Starting with the last saved lists.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    refreshHostsStatus()
+                    requestVpnPermissionAndStart()
+                }
+            )
         }
     }
 
@@ -208,8 +246,25 @@ class MainActivity : AppCompatActivity() {
 
     // ── Hosts status ──────────────────────────────────────────────────────
 
+    /**
+     * Computes blocklist status OFF the main thread, then applies it to the UI.
+     *
+     * getStatus() parses the cached host files (OISD alone can be ~10 MB) to
+     * count domains. Doing that synchronously inside onCreate kept the system
+     * splash screen on screen until parsing finished — sometimes several
+     * seconds. Parsing on Dispatchers.IO lets the first frame draw immediately,
+     * so the splash dismisses right away and counts fill in a moment later.
+     */
     private fun refreshHostsStatus() {
-        val status = HostsManager.getStatus(this)
+        lifecycleScope.launch {
+            val status = withContext(Dispatchers.IO) {
+                HostsManager.getStatus(this@MainActivity)
+            }
+            applyHostsStatus(status)
+        }
+    }
+
+    private fun applyHostsStatus(status: HostsManager.Status) {
         val enabledCached = status.perSource.filter { (k, s) ->
             prefs.isSourceEnabled(k) && s.cacheExists
         }
@@ -258,9 +313,12 @@ class MainActivity : AppCompatActivity() {
                 refreshHostsStatus()
             }
             row.setOnClickListener { cb.isChecked = !cb.isChecked }
+            row.findViewById<TextView>(R.id.tvSourceCount).text = "—"
             container.addView(row)
         }
-        updateFilterSourceCounts(HostsManager.getStatus(this))
+        // Real per-source counts are filled in asynchronously by
+        // refreshHostsStatus() so the initial render never parses on the
+        // main thread (see the note there about splash-screen latency).
     }
 
     private fun updateFilterSourceCounts(status: HostsManager.Status) {
@@ -310,36 +368,46 @@ class MainActivity : AppCompatActivity() {
 
     private fun refreshCustomLists() {
         val whitelist = prefs.getWhitelist().sorted()
-        binding.listWhitelist.adapter =
-            DomainChipAdapter(this, whitelist) { removed ->
-                confirmRemove("Remove \"$removed\" from whitelist?") {
-                    prefs.removeFromWhitelist(removed); refreshCustomLists()
-                }
+        populateDomainList(binding.listWhitelist, whitelist) { removed ->
+            confirmRemove("Remove \"$removed\" from whitelist?") {
+                prefs.removeFromWhitelist(removed); refreshCustomLists()
             }
-        binding.listWhitelist.setOnItemLongClickListener { _, _, position, _ ->
-            confirmRemove("Remove \"${whitelist[position]}\" from whitelist?") {
-                prefs.removeFromWhitelist(whitelist[position]); refreshCustomLists()
-            }
-            true
         }
         binding.tvWhitelistEmpty.visibility =
             if (whitelist.isEmpty()) View.VISIBLE else View.GONE
 
         val blacklist = prefs.getBlacklist().sorted()
-        binding.listBlacklist.adapter =
-            DomainChipAdapter(this, blacklist) { removed ->
-                confirmRemove("Remove \"$removed\" from blacklist?") {
-                    prefs.removeFromBlacklist(removed); refreshCustomLists()
-                }
+        populateDomainList(binding.listBlacklist, blacklist) { removed ->
+            confirmRemove("Remove \"$removed\" from blacklist?") {
+                prefs.removeFromBlacklist(removed); refreshCustomLists()
             }
-        binding.listBlacklist.setOnItemLongClickListener { _, _, position, _ ->
-            confirmRemove("Remove \"${blacklist[position]}\" from blacklist?") {
-                prefs.removeFromBlacklist(blacklist[position]); refreshCustomLists()
-            }
-            true
         }
         binding.tvBlacklistEmpty.visibility =
             if (blacklist.isEmpty()) View.VISIBLE else View.GONE
+    }
+
+    /**
+     * Renders one row per domain into [container].
+     *
+     * Previously these were ListViews, but a ListView nested in a ScrollView
+     * with wrap_content height only measures a single row, so just one domain
+     * was ever visible. Inflating rows straight into a vertical LinearLayout
+     * shows the whole list and lets the parent ScrollView handle scrolling.
+     */
+    private fun populateDomainList(
+        container: LinearLayout,
+        domains: List<String>,
+        onRemove: (String) -> Unit,
+    ) {
+        container.removeAllViews()
+        val inflater = LayoutInflater.from(this)
+        for (domain in domains) {
+            val row = inflater.inflate(R.layout.item_domain_chip, container, false)
+            row.findViewById<TextView>(R.id.tvDomain).text = domain
+            row.findViewById<ImageButton>(R.id.btnRemove).setOnClickListener { onRemove(domain) }
+            row.setOnLongClickListener { onRemove(domain); true }
+            container.addView(row)
+        }
     }
 
     // ── Dialogs ───────────────────────────────────────────────────────────

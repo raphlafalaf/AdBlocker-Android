@@ -14,11 +14,11 @@
         android:strokeLineJoin="round"
         android:pathData="M12,3 L20,6 L20,12 C20,16.4 16.8,20.4 12,21 C7.2,20.4 4,16.4 4,12 L4,6 Z" />
 
-    <!-- Diagonal slash -->
+    <!-- Diagonal slash: centred through the shield, inset so the round caps stay inside the outline. -->
     <path
         android:fillColor="#00000000"
         android:strokeColor="@color/shield_glyph"
         android:strokeWidth="2.2"
         android:strokeLineCap="round"
-        android:pathData="M7,6 L17,18" />
+        android:pathData="M8,8 L16,16" />
 </vector>
