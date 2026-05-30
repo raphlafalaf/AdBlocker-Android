@@ -164,6 +164,18 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp"
                     android:layout_marginTop="2dp" />
+
+                <!-- Indeterminate bar shown only while sources are downloading. -->
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:id="@+id/progressUpdating"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:indeterminate="true"
+                    android:visibility="gone"
+                    app:indicatorColor="@color/accent"
+                    app:trackCornerRadius="2dp"
+                    app:trackThickness="3dp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

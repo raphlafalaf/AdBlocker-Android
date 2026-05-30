@@ -163,13 +163,11 @@ class MainActivity : AppCompatActivity() {
 
         // Always refresh the selected sources before starting so the VPN comes
         // up with the freshest lists.
-        binding.btnToggle.isEnabled = false
-        binding.btnUpdateHosts.isEnabled = false
+        setUpdating(true)
         binding.tvHostsUpdated.text = "Updating selected sources…"
         lifecycleScope.launch {
             val result = HostsManager.downloadAndReload(applicationContext, enabled)
-            binding.btnToggle.isEnabled = true
-            binding.btnUpdateHosts.isEnabled = true
+            setUpdating(false)
             result.fold(
                 onSuccess = { merged ->
                     Toast.makeText(
@@ -338,11 +336,11 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Select at least one source first", Toast.LENGTH_SHORT).show()
             return
         }
-        binding.btnUpdateHosts.isEnabled = false
+        setUpdating(true)
         binding.tvHostsUpdated.text = "Downloading…"
         lifecycleScope.launch {
             val result = HostsManager.downloadAndReload(applicationContext, enabled)
-            binding.btnUpdateHosts.isEnabled = true
+            setUpdating(false)
             result.fold(
                 onSuccess = { merged ->
                     Toast.makeText(
@@ -362,6 +360,16 @@ class MainActivity : AppCompatActivity() {
                 }
             )
         }
+    }
+
+    /**
+     * Toggles the "updating" UI: shows the indeterminate progress bar and
+     * disables the Start / Update buttons while a download is in flight.
+     */
+    private fun setUpdating(updating: Boolean) {
+        binding.progressUpdating.visibility = if (updating) View.VISIBLE else View.GONE
+        binding.btnToggle.isEnabled = !updating
+        binding.btnUpdateHosts.isEnabled = !updating
     }
 
     // ── Whitelist / Blacklist ─────────────────────────────────────────────
